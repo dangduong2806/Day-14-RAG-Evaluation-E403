@@ -1,0 +1,66 @@
+========================================================================
+             DAY 14: RAG EVALUATION PIPELINE - PROJECT SUMMARY
+========================================================================
+
+1. MỤC TIÊU DỰ ÁN
+------------------------------------------------------------------------
+Xây dựng và đánh giá hệ thống RAG chatbot hỗ trợ nhân sự nội bộ (Enterprise 
+HR & Internal Policies Chatbot) bằng một quy trình đánh giá khoa học và tự động,
+giúp tối ưu hóa chất lượng của cả bộ phận Retriever (Truy xuất ngữ cảnh) và 
+Generator (Sinh câu trả lời).
+
+2. CÁC NHIỆM VỤ LẬP TRÌNH ĐÃ HOÀN THÀNH (template.py & solution/solution.py)
+------------------------------------------------------------------------
+- Task 1: Định nghĩa cấu trúc dữ liệu QAPair (lưu câu hỏi, expected answer, 
+  contexts) và EvalResult (lưu điểm số, trạng thái pass/fail, phân loại lỗi).
+- Task 2: Triển khai 3 metrics đánh giá chất lượng câu trả lời bằng phương pháp
+  so khớp từ vựng (Word overlap heuristic):
+    * Faithfulness (Độ trung thực): Kiểm tra câu trả lời có bám sát ngữ cảnh không.
+    * Relevance (Độ liên quan): Đo lường sự khớp giữa câu trả lời và câu hỏi.
+    * Completeness (Độ đầy đủ): Đối chiếu câu trả lời với expected answer.
+- Task 2b: Triển khai các chỉ số đánh giá Retriever:
+    * Context Recall: Tỷ lệ phủ của hợp các chunk thu về so với expected answer.
+    * Context Precision (AP@K): Khả năng xếp các chunk liên quan lên vị trí đầu.
+    * rerank_by_overlap: Bộ sắp xếp lại ngữ cảnh đơn giản để đẩy thông tin đúng lên đầu.
+- Task 3: Thiết kế cấu trúc LLM Judge để chấm điểm tự động theo thang 1-5 và
+  triển khai thuật toán detect_bias (Positional bias, Leniency bias, Severity bias).
+- Task 4: Triển khai BenchmarkRunner để chạy tập test, xuất báo cáo tổng hợp
+  và chạy run_regression (phát hiện suy thoái chất lượng nếu điểm trung bình giảm > 0.05).
+- Task 5: Viết bộ FailureAnalyzer tự động phân loại lỗi, tìm nguyên nhân gốc rễ
+  và xuất bảng nhật ký cải tiến (Improvement Log) dạng Markdown.
+
+3. KẾT QUẢ THỰC NGHIỆM & PHÂN TÍCH (exercises.md)
+------------------------------------------------------------------------
+- Golden Dataset: Xây dựng tập test gồm 20 câu hỏi chuẩn hóa phân theo độ khó 
+  (Stratified Sampling): 5 Dễ + 7 Trung bình + 5 Khó + 3 Tấn công (Adversarial).
+- Baseline Metrics (chạy thực tế qua GPT-4o-mini):
+    * Tỷ lệ Pass Rate: 80.0% (16/20 cases passed).
+    * Điểm trung bình: Faithfulness = 0.62, Relevance = 0.75, Completeness = 0.68.
+    * Phân phối lỗi: 2 off_topic (H05, A03), 1 hallucination (A01), 1 irrelevant (A02).
+- Thử nghiệm Reranking (Exercise 3.5):
+    * Sắp xếp lại ngữ cảnh bằng Expected-based Reranking giúp tăng điểm 
+      Context Precision trung bình từ 0.55 lên 0.97 (+0.42 delta, cải thiện ~76%).
+      Trong khi đó, Context Recall giữ nguyên (0.82) vì tập hợp các chunks không đổi.
+- So sánh Frameworks: Đối chiếu tính năng, độ khắt khe và khả năng tích hợp CI/CD 
+  giữa RAGAS và DeepEval.
+
+4. BÁO CÁO ĐÁNH GIÁ & PHÂN TÍCH LỖI (reflection.md)
+------------------------------------------------------------------------
+- Phân tích 5 Whys chuyên sâu cho 3 ca lỗi tệ nhất (A01, A02, H05):
+    * A01 & A02: Chatbot xử lý từ chối an toàn rất tốt (chống hack wifi và chống 
+      prompt injection) nhưng bị Evaluator thô sơ chấm điểm thấp (coi là lỗi hallucination/irrelevant).
+    * H05: Câu trả lời quá ngắn gọn nên bị thuật toán đếm từ phạt điểm Relevance.
+- Phân cụm lỗi (Failure Clustering):
+    * Nhóm lỗi do Evaluator thiếu quy tắc ngoại lệ khi từ chối an toàn (Adversarial Refusal).
+    * Nhóm lỗi do giải thuật so khớp từ vựng (Word overlap) chưa hỗ trợ tốt ngữ nghĩa.
+- Đề xuất cải tiến: Ưu tiên nâng cấp công cụ đo lường sang Semantic Similarity 
+  (Cosine similarity trên Embeddings) hoặc LLM-as-Judge, đồng thời tích hợp 
+  Reranker mạnh ở khâu Retrieve.
+- Chiến lược CI/CD: Tích hợp chạy regression test tự động trước mỗi lần merge 
+  hoặc cập nhật system prompt.
+
+5. HOÀN THIỆN HỆ THỐNG
+------------------------------------------------------------------------
+- Vượt qua toàn bộ 39 unit tests (pytest tests/ -v).
+- Cấu hình file .gitignore tối ưu (loại bỏ .env, __pycache__, .pytest_cache).
+- Bản sao hoàn chỉnh code được lưu trữ tại solution/solution.py.
